@@ -11,6 +11,7 @@ use App\Checks\PanelVersionCheck;
 use App\Checks\ScheduleCheck;
 use App\Checks\UsedDiskSpaceCheck;
 use App\Models;
+use App\Models\Setting;
 use App\Services\Helpers\SoftwareVersionService;
 use Dedoc\Scramble\Scramble;
 use Dedoc\Scramble\Support\Generator\OpenApi;
@@ -19,6 +20,7 @@ use Filament\Support\Colors\Color;
 use Filament\Support\Facades\FilamentColor;
 use Filament\Support\Facades\FilamentView;
 use Filament\View\PanelsRenderHook;
+use Filament\Facades\Filament;
 use Illuminate\Config\Repository;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Foundation\Application;
@@ -47,9 +49,7 @@ class AppServiceProvider extends ServiceProvider
         SoftwareVersionService $versionService,
         Repository $config,
     ): void {
-        // If the APP_URL value is set with https:// make sure we force it here. Theoretically
-        // this should just work with the proxy logic, but there are a lot of cases where it
-        // doesn't, and it triggers a lot of support requests, so lets just head it off here.
+        // If the APP_URL value is set with https:// make sure we force it here.
         URL::forceHttps(Str::startsWith(config('app.url') ?? '', 'https://'));
 
         if ($app->runningInConsole() && empty(config('app.key'))) {
@@ -164,6 +164,22 @@ class AppServiceProvider extends ServiceProvider
         AboutCommand::add('Drivers', 'Backups', config('backups.default'));
 
         AboutCommand::add('Environment', 'Installation Directory', base_path());
+
+        // 🔥 Custom Background Inject
+        Filament::serving(function () {
+            $background = Setting::where('key', 'background_image')->value('value');
+
+            if ($background) {
+                Filament::registerStyles([
+                    "
+                    body {
+                        background: url('".asset('storage/'.$background)."') no-repeat center center fixed !important;
+                        background-size: cover !important;
+                    }
+                    "
+                ]);
+            }
+        });
     }
 
     /**

@@ -1,16 +1,18 @@
-name: Check Panel Installation
+name: Check Panel
 
 on:
   push:
+    branches:
+      - main
   pull_request:
 
 jobs:
-  build:
+  laravel-tests:
     runs-on: ubuntu-latest
 
     services:
       mysql:
-        image: mysql:8
+        image: mysql:8.0
         env:
           MYSQL_ROOT_PASSWORD: root
           MYSQL_DATABASE: panel
@@ -20,7 +22,7 @@ jobs:
           --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
           --health-interval=10s
           --health-timeout=5s
-          --health-retries=5
+          --health-retries=3
 
     steps:
       - name: Checkout code
@@ -29,14 +31,11 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: 8.2
-          extensions: mbstring, bcmath, intl, pdo, pdo_mysql
-          coverage: none
+          php-version: '8.2'
+          extensions: mbstring, bcmath, pdo, mysql
 
       - name: Install Dependencies
-        run: |
-          composer install --no-interaction --prefer-dist --optimize-autoloader
-          npm install && npm run build
+        run: composer install --prefer-dist --no-progress --no-suggest
 
       - name: Setup Environment File
         run: |
@@ -47,9 +46,11 @@ jobs:
           sed -i 's/DB_USERNAME=.*/DB_USERNAME=root/' .env
           sed -i 's/DB_PASSWORD=.*/DB_PASSWORD=root/' .env
           sed -i 's/DB_HOST=.*/DB_HOST=127.0.0.1/' .env
+          sed -i 's/APP_ENV=.*/APP_ENV=testing/' .env
+          sed -i 's/APP_DEBUG=.*/APP_DEBUG=true/' .env
 
       - name: Run Migrations
-        run: php artisan migrate:fresh --seed
+        run: php artisan migrate:fresh --seed --force
 
       - name: Run Tests
         run: php artisan test

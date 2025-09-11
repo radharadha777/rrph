@@ -1,11 +1,8 @@
-name: Check CoRamTix Panel
+name: Check Panel Installation
 
 on:
   push:
-    branches: [ "main" ]
   pull_request:
-    branches: [ "main" ]
-  workflow_dispatch:
 
 jobs:
   build:
@@ -16,47 +13,43 @@ jobs:
         image: mysql:8
         env:
           MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: coramtix
+          MYSQL_DATABASE: panel
         ports:
           - 3306:3306
         options: >-
-          --health-cmd="mysqladmin ping -h localhost -proot"
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
           --health-interval=10s
           --health-timeout=5s
-          --health-retries=3
+          --health-retries=5
 
     steps:
-      - name: Checkout Code
+      - name: Checkout code
         uses: actions/checkout@v3
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.2'
-          extensions: mbstring, bcmath, intl, mysql, pdo_mysql
+          php-version: 8.2
+          extensions: mbstring, bcmath, intl, pdo, pdo_mysql
           coverage: none
 
-      - name: Install Dependencies (Composer)
-        run: composer install --no-interaction --no-progress --prefer-dist
-
-      - name: Install Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
-
-      - name: Install Dependencies (NPM)
+      - name: Install Dependencies
         run: |
-          npm install
-          npm run build
+          composer install --no-interaction --prefer-dist --optimize-autoloader
+          npm install && npm run build
 
-      - name: Copy Environment File
-        run: cp .env.example .env
-
-      - name: Generate App Key
-        run: php artisan key:generate
+      - name: Setup Environment File
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          sed -i 's/DB_CONNECTION=.*/DB_CONNECTION=mysql/' .env
+          sed -i 's/DB_DATABASE=.*/DB_DATABASE=panel/' .env
+          sed -i 's/DB_USERNAME=.*/DB_USERNAME=root/' .env
+          sed -i 's/DB_PASSWORD=.*/DB_PASSWORD=root/' .env
+          sed -i 's/DB_HOST=.*/DB_HOST=127.0.0.1/' .env
 
       - name: Run Migrations
-        run: php artisan migrate --force
+        run: php artisan migrate:fresh --seed
 
       - name: Run Tests
         run: php artisan test

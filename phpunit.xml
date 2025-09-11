@@ -1,11 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<phpunit bootstrap="vendor/autoload.php"
-         colors="true"
-         stderr="true">
+<phpunit
+    bootstrap="vendor/autoload.php"
+    colors="true"
+    stderr="true"
+    backupGlobals="false"
+    backupStaticAttributes="false"
+    processIsolation="false"
+    stopOnFailure="false"
+    failOnWarning="true"
+    failOnRisky="true"
+    cacheResult="true"
+    cacheDirectory=".phpunit.cache"
+>
     <testsuites>
         <testsuite name="Application Test Suite">
-            <directory>./tests/Feature</directory>
-            <directory>./tests/Unit</directory>
+            <directory suffix="Test.php">./tests/Feature</directory>
+            <directory suffix="Test.php">./tests/Unit</directory>
         </testsuite>
     </testsuites>
+
+    <coverage processUncoveredFiles="true">
+        <include>
+            <directory suffix=".php">./app</directory>
+        </include>
+    </coverage>
 </phpunit>

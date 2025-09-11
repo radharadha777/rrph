@@ -1,10 +1,10 @@
-name: Check Panel
+name: CI Panel Test
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
   pull_request:
+    branches: [ main ]
 
 jobs:
   laravel-tests:
@@ -19,7 +19,7 @@ jobs:
         ports:
           - 3306:3306
         options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-cmd="mysqladmin ping -h localhost"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=3
@@ -31,23 +31,25 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.2'
-          extensions: mbstring, bcmath, pdo, mysql
+          php-version: 8.2
+          extensions: mbstring, bcmath, pdo, pdo_mysql
+          coverage: none
 
-      - name: Install Dependencies
-        run: composer install --prefer-dist --no-progress --no-suggest
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
 
       - name: Setup Environment File
         run: |
           cp .env.example .env
           php artisan key:generate
-          sed -i 's/DB_CONNECTION=.*/DB_CONNECTION=mysql/' .env
-          sed -i 's/DB_DATABASE=.*/DB_DATABASE=panel/' .env
-          sed -i 's/DB_USERNAME=.*/DB_USERNAME=root/' .env
-          sed -i 's/DB_PASSWORD=.*/DB_PASSWORD=root/' .env
-          sed -i 's/DB_HOST=.*/DB_HOST=127.0.0.1/' .env
-          sed -i 's/APP_ENV=.*/APP_ENV=testing/' .env
-          sed -i 's/APP_DEBUG=.*/APP_DEBUG=true/' .env
+          echo "APP_ENV=testing" >> .env
+          echo "APP_DEBUG=true" >> .env
+          echo "DB_CONNECTION=mysql" >> .env
+          echo "DB_HOST=127.0.0.1" >> .env
+          echo "DB_PORT=3306" >> .env
+          echo "DB_DATABASE=panel" >> .env
+          echo "DB_USERNAME=root" >> .env
+          echo "DB_PASSWORD=root" >> .env
 
       - name: Run Migrations
         run: php artisan migrate:fresh --seed --force

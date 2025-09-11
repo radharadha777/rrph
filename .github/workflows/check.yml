@@ -1,21 +1,24 @@
-name: Panel Tests
+name: Check Panel
 
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
 
     services:
       mysql:
-        image: mysql:8
+        image: mysql:8.0
         env:
           MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: laravel_test
+          MYSQL_DATABASE: panel
+          MYSQL_USER: panel
+          MYSQL_PASSWORD: panel
         ports:
           - 3306:3306
         options: >-
@@ -25,30 +28,29 @@ jobs:
           --health-retries=3
 
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Setup PHP
+      - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
           extensions: mbstring, bcmath, pdo, pdo_mysql
-          tools: composer:v2
 
-      - name: Copy .env
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Copy env file
         run: cp .env.example .env
 
-      - name: Update DB config
+      - name: Update .env for MySQL
         run: |
           sed -i 's/DB_CONNECTION=.*/DB_CONNECTION=mysql/' .env
           sed -i 's/DB_HOST=.*/DB_HOST=127.0.0.1/' .env
           sed -i 's/DB_PORT=.*/DB_PORT=3306/' .env
-          sed -i 's/DB_DATABASE=.*/DB_DATABASE=laravel_test/' .env
-          sed -i 's/DB_USERNAME=.*/DB_USERNAME=root/' .env
-          sed -i 's/DB_PASSWORD=.*/DB_PASSWORD=root/' .env
-
-      - name: Install dependencies
-        run: composer install --prefer-dist --no-progress --no-suggest
+          sed -i 's/DB_DATABASE=.*/DB_DATABASE=panel/' .env
+          sed -i 's/DB_USERNAME=.*/DB_USERNAME=panel/' .env
+          sed -i 's/DB_PASSWORD=.*/DB_PASSWORD=panel/' .env
 
       - name: Generate app key
         run: php artisan key:generate

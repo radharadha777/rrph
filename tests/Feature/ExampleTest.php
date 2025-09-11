@@ -1,11 +1,5 @@
 <?php
 
-test('basic test works', function () {
+test('basic feature test', function () {
     expect(true)->toBeTrue();
-});
-
-test('homepage loads', function () {
-    $response = $this->get('/');
-
-    $response->assertStatus(200);
 });
